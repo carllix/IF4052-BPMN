@@ -1,0 +1,18 @@
+{
+  "id": "konfirmasi-restoran",
+  "type": "default",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": { "name": "Camunda Modeler", "version": "5.0.0" },
+  "schemaVersion": 12,
+  "components": [
+    { "id": "Text_Judul", "type": "text", "text": "# Konfirmasi Pesanan" },
+    { "id": "Field_NamaCustomer", "type": "textfield", "key": "namaCustomer", "label": "Nama Customer", "disabled": true },
+    { "id": "Field_Restoran", "type": "textfield", "key": "restoran", "label": "Restoran", "disabled": true },
+    { "id": "Field_Menu", "type": "textfield", "key": "menu", "label": "Menu", "disabled": true },
+    { "id": "Field_Jumlah", "type": "number", "key": "jumlah", "label": "Jumlah", "disabled": true },
+    { "id": "Field_TotalHarga", "type": "number", "key": "totalHarga", "label": "Total Harga (Rp)", "disabled": true },
+    { "id": "Field_Alamat", "type": "textarea", "key": "alamat", "label": "Alamat Pengantaran", "disabled": true },
+    { "id": "Field_DiterimaRestoran", "type": "checkbox", "key": "diterimaRestoran", "label": "Terima pesanan", "defaultValue": false }
+  ]
+}

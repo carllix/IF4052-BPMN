@@ -1,0 +1,17 @@
+{
+  "id": "start-pesanan",
+  "type": "default",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": { "name": "Camunda Modeler", "version": "5.0.0" },
+  "schemaVersion": 12,
+  "components": [
+    { "id": "Text_Judul", "type": "text", "text": "# Pesan Makanan" },
+    { "id": "Field_NamaCustomer", "type": "textfield", "key": "namaCustomer", "label": "Nama Customer", "validate": { "required": true } },
+    { "id": "Field_Restoran", "type": "textfield", "key": "restoran", "label": "Restoran", "validate": { "required": true } },
+    { "id": "Field_Menu", "type": "textfield", "key": "menu", "label": "Menu", "validate": { "required": true } },
+    { "id": "Field_Jumlah", "type": "number", "key": "jumlah", "label": "Jumlah", "validate": { "required": true, "min": 1 } },
+    { "id": "Field_HargaSatuan", "type": "number", "key": "hargaSatuan", "label": "Harga Satuan (Rp)", "validate": { "required": true, "min": 0 } },
+    { "id": "Field_Alamat", "type": "textarea", "key": "alamat", "label": "Alamat Pengantaran", "validate": { "required": true } }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "antar-pesanan",
+  "type": "default",
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.24.0",
+  "exporter": { "name": "Camunda Modeler", "version": "5.0.0" },
+  "schemaVersion": 12,
+  "components": [
+    { "id": "Text_Judul", "type": "text", "text": "# Antar Pesanan" },
+    { "id": "Field_NamaDriver", "type": "textfield", "key": "namaDriver", "label": "Driver", "disabled": true },
+    { "id": "Field_NamaCustomer", "type": "textfield", "key": "namaCustomer", "label": "Nama Customer", "disabled": true },
+    { "id": "Field_Restoran", "type": "textfield", "key": "restoran", "label": "Ambil di Restoran", "disabled": true },
+    { "id": "Field_Menu", "type": "textfield", "key": "menu", "label": "Menu", "disabled": true },
+    { "id": "Field_Jumlah", "type": "number", "key": "jumlah", "label": "Jumlah", "disabled": true },
+    { "id": "Field_Alamat", "type": "textarea", "key": "alamat", "label": "Alamat Pengantaran", "disabled": true },
+    { "id": "Field_SudahDiantar", "type": "checkbox", "key": "sudahDiantar", "label": "Pesanan sudah diantar", "validate": { "required": true } }
+  ]
+}
