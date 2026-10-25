@@ -1,24 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
-                  id="Definitions_PesanMakanan"
-                  targetNamespace="http://bpmn.io/schema/bpmn"
-                  exporter="Camunda Modeler"
-                  exporterVersion="5.0.0"
-                  modeler:executionPlatform="Camunda Platform"
-                  modeler:executionPlatformVersion="7.24.0">
-
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_PesanMakanan" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.52.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
   <bpmn:collaboration id="Collaboration_PesanMakanan">
     <bpmn:participant id="Participant_PesanMakanan" name="Pesan Makanan Online" processRef="pesan-makanan" />
   </bpmn:collaboration>
-
   <bpmn:process id="pesan-makanan" name="Pesan Makanan Online" isExecutable="true" camunda:historyTimeToLive="180">
-
     <bpmn:laneSet id="LaneSet_PesanMakanan">
       <bpmn:lane id="Lane_Customer" name="Customer">
         <bpmn:flowNodeRef>StartEvent_CustomerPesan</bpmn:flowNodeRef>
@@ -26,14 +11,18 @@
       <bpmn:lane id="Lane_Sistem" name="Sistem">
         <bpmn:flowNodeRef>Task_HitungOngkir</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_ProsesPembayaran</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_MulaiParalel</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_CariDriver</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_MergeRefund</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_DriverDitemukan</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>BoundaryEvent_BatasWaktuDriver</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_TungguHasil</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_Gagal</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_RefundPembayaran</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_PesananDibatalkan</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_Restoran" name="Restoran">
         <bpmn:flowNodeRef>Task_KonfirmasiRestoran</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>Gateway_RestoranTerima</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_RestoranHasil</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>BoundaryEvent_BatasWaktuRestoran</bpmn:flowNodeRef>
       </bpmn:lane>
       <bpmn:lane id="Lane_Driver" name="Driver">
@@ -41,235 +30,297 @@
         <bpmn:flowNodeRef>EndEvent_PesananSelesai</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
-
-    <!-- Start -->
-    <bpmn:startEvent id="StartEvent_CustomerPesan" name="Customer Pesan"
-                     camunda:formRef="start-pesanan" camunda:formRefBinding="deployment"
-                     camunda:initiator="initiator">
+    <bpmn:startEvent id="StartEvent_CustomerPesan" name="Customer Pesan" camunda:formRef="start-pesanan" camunda:formRefBinding="deployment" camunda:initiator="initiator">
       <bpmn:outgoing>Flow_Start_HitungOngkir</bpmn:outgoing>
     </bpmn:startEvent>
-
-    <!-- 1. Hitung Ongkir & Total Harga -->
-    <bpmn:serviceTask id="Task_HitungOngkir" name="Hitung Ongkir &amp; Total Harga"
-                      camunda:type="external" camunda:topic="hitung-ongkir">
+    <bpmn:serviceTask id="Task_HitungOngkir" name="Hitung Ongkir &#38; Total Harga" camunda:type="external" camunda:topic="hitung-ongkir">
       <bpmn:incoming>Flow_Start_HitungOngkir</bpmn:incoming>
       <bpmn:outgoing>Flow_HitungOngkir_Pembayaran</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- 2. Proses Pembayaran -->
-    <bpmn:serviceTask id="Task_ProsesPembayaran" name="Proses Pembayaran"
-                      camunda:type="external" camunda:topic="proses-pembayaran">
+    <bpmn:serviceTask id="Task_ProsesPembayaran" name="Proses Pembayaran" camunda:type="external" camunda:topic="proses-pembayaran">
       <bpmn:incoming>Flow_HitungOngkir_Pembayaran</bpmn:incoming>
-      <bpmn:outgoing>Flow_Pembayaran_Konfirmasi</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Pembayaran_Paralel</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- 3. Konfirmasi oleh Restoran -->
-    <bpmn:userTask id="Task_KonfirmasiRestoran" name="Konfirmasi oleh Restoran"
-                   camunda:assignee="restoran"
-                   camunda:formRef="konfirmasi-restoran" camunda:formRefBinding="deployment">
-      <bpmn:incoming>Flow_Pembayaran_Konfirmasi</bpmn:incoming>
-      <bpmn:outgoing>Flow_Konfirmasi_Gateway</bpmn:outgoing>
+    <bpmn:parallelGateway id="Gateway_MulaiParalel" name="Mulai paralel">
+      <bpmn:incoming>Flow_Pembayaran_Paralel</bpmn:incoming>
+      <bpmn:outgoing>Flow_Paralel_Konfirmasi</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Paralel_CariDriver</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="Task_KonfirmasiRestoran" name="Konfirmasi oleh Restoran" camunda:formRef="konfirmasi-restoran" camunda:formRefBinding="deployment" camunda:assignee="restoran">
+      <bpmn:incoming>Flow_Paralel_Konfirmasi</bpmn:incoming>
+      <bpmn:outgoing>Flow_Konfirmasi_GatewayRestoran</bpmn:outgoing>
     </bpmn:userTask>
-
-    <!-- Boundary timer: restoran tidak merespons -->
-    <bpmn:boundaryEvent id="BoundaryEvent_BatasWaktuRestoran" name="Batas Waktu Restoran (5 menit)"
-                        attachedToRef="Task_KonfirmasiRestoran" cancelActivity="true">
-      <bpmn:outgoing>Flow_Timeout_Merge</bpmn:outgoing>
+    <bpmn:exclusiveGateway id="Gateway_RestoranHasil" name="Restoran menerima?" default="Flow_Restoran_Tidak">
+      <bpmn:incoming>Flow_Konfirmasi_GatewayRestoran</bpmn:incoming>
+      <bpmn:outgoing>Flow_Restoran_Diterima</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Restoran_Tidak</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:boundaryEvent id="BoundaryEvent_BatasWaktuRestoran" name="Timeout 5 menit" attachedToRef="Task_KonfirmasiRestoran">
+      <bpmn:outgoing>Flow_Timeout_RestoranGagal</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_BatasWaktu">
         <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
-
-    <!-- Gateway: Restoran terima? -->
-    <bpmn:exclusiveGateway id="Gateway_RestoranTerima" name="Restoran terima?">
-      <bpmn:incoming>Flow_Konfirmasi_Gateway</bpmn:incoming>
-      <bpmn:outgoing>Flow_Terima</bpmn:outgoing>
-      <bpmn:outgoing>Flow_Tolak</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-
-    <!-- 4. Cari Driver -->
-    <bpmn:serviceTask id="Task_CariDriver" name="Cari Driver"
-                      camunda:type="external" camunda:topic="cari-driver">
-      <bpmn:incoming>Flow_Terima</bpmn:incoming>
-      <bpmn:outgoing>Flow_CariDriver_Antar</bpmn:outgoing>
+    <bpmn:serviceTask id="Task_CariDriver" name="Cari Driver" camunda:type="external" camunda:topic="cari-driver">
+      <bpmn:incoming>Flow_Paralel_CariDriver</bpmn:incoming>
+      <bpmn:outgoing>Flow_CariDriver_GatewayDriver</bpmn:outgoing>
     </bpmn:serviceTask>
-
-    <!-- 5. Antar Pesanan -->
-    <bpmn:userTask id="Task_AntarPesanan" name="Antar Pesanan"
-                   camunda:assignee="driver"
-                   camunda:formRef="antar-pesanan" camunda:formRefBinding="deployment">
-      <bpmn:incoming>Flow_CariDriver_Antar</bpmn:incoming>
+    <bpmn:boundaryEvent id="BoundaryEvent_BatasWaktuDriver" name="Timeout 2 menit" attachedToRef="Task_CariDriver">
+      <bpmn:outgoing>Flow_Timeout_DriverGagal</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_BatasWaktuDriver">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2M</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="Gateway_DriverDitemukan" name="Driver ditemukan?" default="Flow_Driver_Tidak">
+      <bpmn:incoming>Flow_CariDriver_GatewayDriver</bpmn:incoming>
+      <bpmn:outgoing>Flow_Driver_Ditemukan</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Driver_Tidak</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:parallelGateway id="Gateway_TungguHasil" name="Keduanya siap">
+      <bpmn:incoming>Flow_Restoran_Diterima</bpmn:incoming>
+      <bpmn:incoming>Flow_Driver_Ditemukan</bpmn:incoming>
+      <bpmn:outgoing>Flow_Hasil_Antar</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:exclusiveGateway id="Gateway_Gagal" name="Proses gagal">
+      <bpmn:incoming>Flow_Restoran_Tidak</bpmn:incoming>
+      <bpmn:incoming>Flow_Timeout_RestoranGagal</bpmn:incoming>
+      <bpmn:incoming>Flow_Driver_Tidak</bpmn:incoming>
+      <bpmn:incoming>Flow_Timeout_DriverGagal</bpmn:incoming>
+      <bpmn:outgoing>Flow_Gagal_Refund</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_AntarPesanan" name="Antar Pesanan" camunda:formRef="antar-pesanan" camunda:formRefBinding="deployment" camunda:assignee="driver">
+      <bpmn:incoming>Flow_Hasil_Antar</bpmn:incoming>
       <bpmn:outgoing>Flow_Antar_Selesai</bpmn:outgoing>
     </bpmn:userTask>
-
     <bpmn:endEvent id="EndEvent_PesananSelesai" name="Pesanan Selesai">
       <bpmn:incoming>Flow_Antar_Selesai</bpmn:incoming>
     </bpmn:endEvent>
-
-    <!-- Merge cabang Tolak dan timeout sebelum refund -->
-    <bpmn:exclusiveGateway id="Gateway_MergeRefund">
-      <bpmn:incoming>Flow_Tolak</bpmn:incoming>
-      <bpmn:incoming>Flow_Timeout_Merge</bpmn:incoming>
-      <bpmn:outgoing>Flow_Merge_Refund</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-
-    <!-- 6. Refund Pembayaran -->
-    <bpmn:serviceTask id="Task_RefundPembayaran" name="Refund Pembayaran"
-                      camunda:type="external" camunda:topic="refund-pembayaran">
-      <bpmn:incoming>Flow_Merge_Refund</bpmn:incoming>
+    <bpmn:serviceTask id="Task_RefundPembayaran" name="Refund Pembayaran" camunda:type="external" camunda:topic="refund-pembayaran">
+      <bpmn:incoming>Flow_Gagal_Refund</bpmn:incoming>
       <bpmn:outgoing>Flow_Refund_Batal</bpmn:outgoing>
     </bpmn:serviceTask>
-
     <bpmn:endEvent id="EndEvent_PesananDibatalkan" name="Pesanan Dibatalkan">
       <bpmn:incoming>Flow_Refund_Batal</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_PesananDibatalkan" />
     </bpmn:endEvent>
-
-    <!-- Sequence flows -->
     <bpmn:sequenceFlow id="Flow_Start_HitungOngkir" sourceRef="StartEvent_CustomerPesan" targetRef="Task_HitungOngkir" />
     <bpmn:sequenceFlow id="Flow_HitungOngkir_Pembayaran" sourceRef="Task_HitungOngkir" targetRef="Task_ProsesPembayaran" />
-    <bpmn:sequenceFlow id="Flow_Pembayaran_Konfirmasi" sourceRef="Task_ProsesPembayaran" targetRef="Task_KonfirmasiRestoran" />
-    <bpmn:sequenceFlow id="Flow_Konfirmasi_Gateway" sourceRef="Task_KonfirmasiRestoran" targetRef="Gateway_RestoranTerima" />
-    <bpmn:sequenceFlow id="Flow_Terima" name="Terima" sourceRef="Gateway_RestoranTerima" targetRef="Task_CariDriver">
+    <bpmn:sequenceFlow id="Flow_Pembayaran_Paralel" sourceRef="Task_ProsesPembayaran" targetRef="Gateway_MulaiParalel" />
+    <bpmn:sequenceFlow id="Flow_Paralel_Konfirmasi" sourceRef="Gateway_MulaiParalel" targetRef="Task_KonfirmasiRestoran" />
+    <bpmn:sequenceFlow id="Flow_Paralel_CariDriver" sourceRef="Gateway_MulaiParalel" targetRef="Task_CariDriver" />
+    <bpmn:sequenceFlow id="Flow_Konfirmasi_GatewayRestoran" sourceRef="Task_KonfirmasiRestoran" targetRef="Gateway_RestoranHasil" />
+    <bpmn:sequenceFlow id="Flow_Restoran_Diterima" name="Ya" sourceRef="Gateway_RestoranHasil" targetRef="Gateway_TungguHasil">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${diterimaRestoran == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_Tolak" name="Tolak" sourceRef="Gateway_RestoranTerima" targetRef="Gateway_MergeRefund">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${diterimaRestoran == false}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_Restoran_Tidak" name="Tidak" sourceRef="Gateway_RestoranHasil" targetRef="Gateway_Gagal" />
+    <bpmn:sequenceFlow id="Flow_Timeout_RestoranGagal" sourceRef="BoundaryEvent_BatasWaktuRestoran" targetRef="Gateway_Gagal" />
+    <bpmn:sequenceFlow id="Flow_CariDriver_GatewayDriver" sourceRef="Task_CariDriver" targetRef="Gateway_DriverDitemukan" />
+    <bpmn:sequenceFlow id="Flow_Driver_Ditemukan" name="Ya" sourceRef="Gateway_DriverDitemukan" targetRef="Gateway_TungguHasil">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${driverFound == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_Timeout_Merge" sourceRef="BoundaryEvent_BatasWaktuRestoran" targetRef="Gateway_MergeRefund" />
-    <bpmn:sequenceFlow id="Flow_CariDriver_Antar" sourceRef="Task_CariDriver" targetRef="Task_AntarPesanan" />
+    <bpmn:sequenceFlow id="Flow_Driver_Tidak" name="Tidak" sourceRef="Gateway_DriverDitemukan" targetRef="Gateway_Gagal" />
+    <bpmn:sequenceFlow id="Flow_Timeout_DriverGagal" sourceRef="BoundaryEvent_BatasWaktuDriver" targetRef="Gateway_Gagal" />
+    <bpmn:sequenceFlow id="Flow_Hasil_Antar" sourceRef="Gateway_TungguHasil" targetRef="Task_AntarPesanan" />
+    <bpmn:sequenceFlow id="Flow_Gagal_Refund" sourceRef="Gateway_Gagal" targetRef="Task_RefundPembayaran" />
     <bpmn:sequenceFlow id="Flow_Antar_Selesai" sourceRef="Task_AntarPesanan" targetRef="EndEvent_PesananSelesai" />
-    <bpmn:sequenceFlow id="Flow_Merge_Refund" sourceRef="Gateway_MergeRefund" targetRef="Task_RefundPembayaran" />
     <bpmn:sequenceFlow id="Flow_Refund_Batal" sourceRef="Task_RefundPembayaran" targetRef="EndEvent_PesananDibatalkan" />
   </bpmn:process>
-
   <bpmndi:BPMNDiagram id="BPMNDiagram_PesanMakanan">
     <bpmndi:BPMNPlane id="BPMNPlane_PesanMakanan" bpmnElement="Collaboration_PesanMakanan">
-
-      <!-- Pool & lanes -->
       <bpmndi:BPMNShape id="Participant_PesanMakanan_di" bpmnElement="Participant_PesanMakanan" isHorizontal="true">
-        <dc:Bounds x="160" y="80" width="1290" height="670" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_Customer_di" bpmnElement="Lane_Customer" isHorizontal="true">
-        <dc:Bounds x="190" y="80" width="1260" height="150" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_Sistem_di" bpmnElement="Lane_Sistem" isHorizontal="true">
-        <dc:Bounds x="190" y="230" width="1260" height="220" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Lane_Restoran_di" bpmnElement="Lane_Restoran" isHorizontal="true">
-        <dc:Bounds x="190" y="450" width="1260" height="150" />
+        <dc:Bounds x="150" y="80" width="1750" height="720" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Lane_Driver_di" bpmnElement="Lane_Driver" isHorizontal="true">
-        <dc:Bounds x="190" y="600" width="1260" height="150" />
+        <dc:Bounds x="180" y="570" width="1720" height="230" />
       </bpmndi:BPMNShape>
-
-      <!-- Nodes -->
+      <bpmndi:BPMNShape id="Lane_Restoran_di" bpmnElement="Lane_Restoran" isHorizontal="true">
+        <dc:Bounds x="180" y="420" width="1720" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Sistem_di" bpmnElement="Lane_Sistem" isHorizontal="true">
+        <dc:Bounds x="180" y="200" width="1720" height="220" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Customer_di" bpmnElement="Lane_Customer" isHorizontal="true">
+        <dc:Bounds x="180" y="80" width="1720" height="120" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_CustomerPesan_di" bpmnElement="StartEvent_CustomerPesan">
-        <dc:Bounds x="232" y="137" width="36" height="36" />
+        <dc:Bounds x="230" y="122" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="211" y="180" width="78" height="14" />
+          <dc:Bounds x="207" y="158" width="82" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_HitungOngkir_di" bpmnElement="Task_HitungOngkir">
-        <dc:Bounds x="320" y="250" width="100" height="80" />
+        <dc:Bounds x="350" y="275" width="110" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_ProsesPembayaran_di" bpmnElement="Task_ProsesPembayaran">
-        <dc:Bounds x="470" y="250" width="100" height="80" />
+        <dc:Bounds x="510" y="275" width="110" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_MulaiParalel_di" bpmnElement="Gateway_MulaiParalel" isMarkerVisible="true">
+        <dc:Bounds x="680" y="290" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="674" y="345" width="63" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_KonfirmasiRestoran_di" bpmnElement="Task_KonfirmasiRestoran">
-        <dc:Bounds x="620" y="485" width="100" height="80" />
+        <dc:Bounds x="830" y="450" width="120" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_RestoranTerima_di" bpmnElement="Gateway_RestoranTerima" isMarkerVisible="true">
-        <dc:Bounds x="755" y="500" width="50" height="50" />
+      <bpmndi:BPMNShape id="Gateway_RestoranHasil_di" bpmnElement="Gateway_RestoranHasil" isMarkerVisible="true">
+        <dc:Bounds x="1060" y="465" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="738" y="557" width="84" height="14" />
+          <dc:Bounds x="1057" y="436" width="56" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_CariDriver_di" bpmnElement="Task_CariDriver">
-        <dc:Bounds x="1050" y="250" width="100" height="80" />
+        <dc:Bounds x="830" y="225" width="120" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_AntarPesanan_di" bpmnElement="Task_AntarPesanan">
-        <dc:Bounds x="1200" y="635" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_PesananSelesai_di" bpmnElement="EndEvent_PesananSelesai">
-        <dc:Bounds x="1352" y="657" width="36" height="36" />
+      <bpmndi:BPMNShape id="Gateway_DriverDitemukan_di" bpmnElement="Gateway_DriverDitemukan" isMarkerVisible="true">
+        <dc:Bounds x="1060" y="240" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1330" y="700" width="80" height="14" />
+          <dc:Bounds x="1032" y="215" width="106" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_MergeRefund_di" bpmnElement="Gateway_MergeRefund" isMarkerVisible="true">
-        <dc:Bounds x="755" y="375" width="50" height="50" />
+      <bpmndi:BPMNShape id="Gateway_TungguHasil_di" bpmnElement="Gateway_TungguHasil" isMarkerVisible="true">
+        <dc:Bounds x="1220" y="290" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1209" y="273" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Gagal_di" bpmnElement="Gateway_Gagal" isMarkerVisible="true">
+        <dc:Bounds x="1320" y="390" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1267" y="433" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AntarPesanan_di" bpmnElement="Task_AntarPesanan">
+        <dc:Bounds x="1510" y="635" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_PesananSelesai_di" bpmnElement="EndEvent_PesananSelesai">
+        <dc:Bounds x="1710" y="657" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1680" y="700" width="100" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_RefundPembayaran_di" bpmnElement="Task_RefundPembayaran">
-        <dc:Bounds x="850" y="360" width="100" height="80" />
+        <dc:Bounds x="1510" y="250" width="120" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_PesananDibatalkan_di" bpmnElement="EndEvent_PesananDibatalkan">
-        <dc:Bounds x="982" y="382" width="36" height="36" />
+        <dc:Bounds x="1710" y="272" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="954" y="355" width="92" height="14" />
+          <dc:Bounds x="1678" y="314" width="100" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_BatasWaktuDriver_di" bpmnElement="BoundaryEvent_BatasWaktuDriver">
+        <dc:Bounds x="872" y="207" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="915" y="207" width="94" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BoundaryEvent_BatasWaktuRestoran_di" bpmnElement="BoundaryEvent_BatasWaktuRestoran">
-        <dc:Bounds x="652" y="467" width="36" height="36" />
+        <dc:Bounds x="872" y="432" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="532" y="462" width="80" height="27" />
+          <dc:Bounds x="781" y="433" width="79" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-
-      <!-- Edges -->
       <bpmndi:BPMNEdge id="Flow_Start_HitungOngkir_di" bpmnElement="Flow_Start_HitungOngkir">
-        <di:waypoint x="268" y="155" />
-        <di:waypoint x="370" y="155" />
-        <di:waypoint x="370" y="250" />
+        <di:waypoint x="266" y="140" />
+        <di:waypoint x="310" y="140" />
+        <di:waypoint x="310" y="315" />
+        <di:waypoint x="350" y="315" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_HitungOngkir_Pembayaran_di" bpmnElement="Flow_HitungOngkir_Pembayaran">
-        <di:waypoint x="420" y="290" />
-        <di:waypoint x="470" y="290" />
+        <di:waypoint x="460" y="315" />
+        <di:waypoint x="510" y="315" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Pembayaran_Konfirmasi_di" bpmnElement="Flow_Pembayaran_Konfirmasi">
-        <di:waypoint x="520" y="330" />
-        <di:waypoint x="520" y="525" />
-        <di:waypoint x="620" y="525" />
+      <bpmndi:BPMNEdge id="Flow_Pembayaran_Paralel_di" bpmnElement="Flow_Pembayaran_Paralel">
+        <di:waypoint x="620" y="315" />
+        <di:waypoint x="680" y="315" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Konfirmasi_Gateway_di" bpmnElement="Flow_Konfirmasi_Gateway">
-        <di:waypoint x="720" y="525" />
-        <di:waypoint x="755" y="525" />
+      <bpmndi:BPMNEdge id="Flow_Paralel_Konfirmasi_di" bpmnElement="Flow_Paralel_Konfirmasi">
+        <di:waypoint x="705" y="340" />
+        <di:waypoint x="705" y="490" />
+        <di:waypoint x="830" y="490" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Terima_di" bpmnElement="Flow_Terima">
-        <di:waypoint x="805" y="525" />
-        <di:waypoint x="1100" y="525" />
-        <di:waypoint x="1100" y="330" />
+      <bpmndi:BPMNEdge id="Flow_Paralel_CariDriver_di" bpmnElement="Flow_Paralel_CariDriver">
+        <di:waypoint x="730" y="315" />
+        <di:waypoint x="780" y="315" />
+        <di:waypoint x="780" y="265" />
+        <di:waypoint x="830" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Konfirmasi_GatewayRestoran_di" bpmnElement="Flow_Konfirmasi_GatewayRestoran">
+        <di:waypoint x="950" y="490" />
+        <di:waypoint x="1060" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Restoran_Diterima_di" bpmnElement="Flow_Restoran_Diterima">
+        <di:waypoint x="1110" y="490" />
+        <di:waypoint x="1160" y="490" />
+        <di:waypoint x="1160" y="315" />
+        <di:waypoint x="1220" y="315" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="930" y="507" width="34" height="14" />
+          <dc:Bounds x="1125" y="470" width="20" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Tolak_di" bpmnElement="Flow_Tolak">
-        <di:waypoint x="780" y="500" />
-        <di:waypoint x="780" y="425" />
+      <bpmndi:BPMNEdge id="Flow_Restoran_Tidak_di" bpmnElement="Flow_Restoran_Tidak">
+        <di:waypoint x="1085" y="515" />
+        <di:waypoint x="1085" y="545" />
+        <di:waypoint x="1345" y="545" />
+        <di:waypoint x="1345" y="440" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="788" y="455" width="26" height="14" />
+          <dc:Bounds x="1095" y="520" width="30" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Timeout_Merge_di" bpmnElement="Flow_Timeout_Merge">
-        <di:waypoint x="670" y="467" />
-        <di:waypoint x="670" y="400" />
-        <di:waypoint x="755" y="400" />
+      <bpmndi:BPMNEdge id="Flow_Timeout_RestoranGagal_di" bpmnElement="Flow_Timeout_RestoranGagal">
+        <di:waypoint x="890" y="432" />
+        <di:waypoint x="890" y="390" />
+        <di:waypoint x="1345" y="390" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_CariDriver_Antar_di" bpmnElement="Flow_CariDriver_Antar">
-        <di:waypoint x="1150" y="290" />
-        <di:waypoint x="1250" y="290" />
-        <di:waypoint x="1250" y="635" />
+      <bpmndi:BPMNEdge id="Flow_CariDriver_GatewayDriver_di" bpmnElement="Flow_CariDriver_GatewayDriver">
+        <di:waypoint x="950" y="265" />
+        <di:waypoint x="1060" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Driver_Ditemukan_di" bpmnElement="Flow_Driver_Ditemukan">
+        <di:waypoint x="1110" y="265" />
+        <di:waypoint x="1195" y="265" />
+        <di:waypoint x="1195" y="315" />
+        <di:waypoint x="1220" y="315" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1140" y="245" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Driver_Tidak_di" bpmnElement="Flow_Driver_Tidak">
+        <di:waypoint x="1085" y="290" />
+        <di:waypoint x="1085" y="350" />
+        <di:waypoint x="1295" y="350" />
+        <di:waypoint x="1295" y="415" />
+        <di:waypoint x="1320" y="415" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1097" y="311" width="27" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Timeout_DriverGagal_di" bpmnElement="Flow_Timeout_DriverGagal">
+        <di:waypoint x="872" y="225" />
+        <di:waypoint x="800" y="225" />
+        <di:waypoint x="800" y="370" />
+        <di:waypoint x="1345" y="370" />
+        <di:waypoint x="1345" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Hasil_Antar_di" bpmnElement="Flow_Hasil_Antar">
+        <di:waypoint x="1270" y="315" />
+        <di:waypoint x="1400" y="315" />
+        <di:waypoint x="1400" y="675" />
+        <di:waypoint x="1510" y="675" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gagal_Refund_di" bpmnElement="Flow_Gagal_Refund">
+        <di:waypoint x="1370" y="415" />
+        <di:waypoint x="1440" y="415" />
+        <di:waypoint x="1440" y="290" />
+        <di:waypoint x="1510" y="290" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Antar_Selesai_di" bpmnElement="Flow_Antar_Selesai">
-        <di:waypoint x="1300" y="675" />
-        <di:waypoint x="1352" y="675" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Merge_Refund_di" bpmnElement="Flow_Merge_Refund">
-        <di:waypoint x="805" y="400" />
-        <di:waypoint x="850" y="400" />
+        <di:waypoint x="1630" y="675" />
+        <di:waypoint x="1710" y="675" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Refund_Batal_di" bpmnElement="Flow_Refund_Batal">
-        <di:waypoint x="950" y="400" />
-        <di:waypoint x="982" y="400" />
+        <di:waypoint x="1630" y="290" />
+        <di:waypoint x="1710" y="290" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

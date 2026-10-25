@@ -5,3 +5,29 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+  mock-api:
+    image: node:20-alpine
+    working_dir: /app
+    command: ["node", "index.js"]
+    volumes:
+      - ./mock-api:/app:ro
+    environment:
+      PORT: "3000"
+      MOCK_DRIVER_AVAILABLE: ${MOCK_DRIVER_AVAILABLE:-true}
+      MOCK_DRIVER_SEARCH_DELAY_MS: ${MOCK_DRIVER_SEARCH_DELAY_MS:-0}
+    restart: unless-stopped
+
+  worker:
+    image: node:20-alpine
+    working_dir: /app
+    command: ["node", "index.js"]
+    volumes:
+      - ./workers:/app:ro
+    environment:
+      CAMUNDA_URL: http://camunda:8080/engine-rest
+      MOCK_API_URL: http://mock-api:3000
+    depends_on:
+      - camunda
+      - mock-api
+    restart: unless-stopped
